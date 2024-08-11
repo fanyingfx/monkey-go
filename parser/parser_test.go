@@ -51,7 +51,6 @@ func checkParserErrors(t *testing.T, p *Parser) {
 	for _, msg := range errors {
 		t.Errorf("parser error: %q", msg)
 	}
-	t.FailNow()
 }
 
 func testLetStatement(t *testing.T, s ast.Statement, name string) bool {
