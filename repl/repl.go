@@ -1,6 +1,7 @@
 package repl
 
 import (
+	// "bufio"
 	"bufio"
 	"fmt"
 	"io"
@@ -24,8 +25,19 @@ func Start(in io.Reader, out io.Writer) {
 		if !scanned {
 			return
 		}
-
 		line := scanner.Text()
+
+		// line := `
+		// 	let a = "global";
+		// 	fn(){
+		// 		let showA = fn(){
+		// 			puts(a);
+		// 		};
+		// 		showA();
+		// 		let a = "inner";
+		// 		showA();
+		// 	}();
+		// `
 		if strings.TrimSpace(line) == "exit" {
 			io.WriteString(out, "Good Bye!\n")
 			os.Exit(0)
@@ -36,11 +48,10 @@ func Start(in io.Reader, out io.Writer) {
 		program := p.ParseProgram()
 		if len(p.Errors()) != 0 {
 			printParserErrors(out, p.Errors())
-			continue
+			// continue
 		}
 		evaluated := evaluator.Eval(program, env)
 		if evaluated != nil {
-
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
 		}
