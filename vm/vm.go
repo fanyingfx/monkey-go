@@ -7,6 +7,8 @@ import (
 	"monkey/object"
 )
 
+const GlobalsSize = 65536
+
 var Null = &object.Null{}
 var True = &object.Boolean{Value: true}
 var False = &object.Boolean{Value: false}
@@ -14,8 +16,9 @@ var False = &object.Boolean{Value: false}
 const StackSize = 2048
 
 type VM struct {
-	constants    []object.Object
 	instructions code.Instructions
+	constants    []object.Object
+	globals      []object.Object
 
 	stack []object.Object
 	sp    int
@@ -25,6 +28,7 @@ func New(bytecode *compiler.Bytecode) *VM {
 	return &VM{
 		instructions: bytecode.Instructions,
 		constants:    bytecode.Constants,
+		globals:      make([]object.Object, GlobalsSize),
 		stack:        make([]object.Object, StackSize),
 		sp:           0,
 	}
@@ -90,6 +94,17 @@ func (vm *VM) Run() error {
 			condition := vm.pop()
 			if !isTruthy(condition) {
 				ip = pos - 1
+			}
+		case code.OpSetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			vm.globals[globalIndex] = vm.pop()
+		case code.OpGetGlobal:
+			globalIndex := code.ReadUint16(vm.instructions[ip+1:])
+			ip += 2
+			err := vm.push(vm.globals[globalIndex])
+			if err != nil {
+				return err
 			}
 
 		case code.OpPop:
@@ -218,4 +233,10 @@ func nativeBoolToBooleanObject(input bool) *object.Boolean {
 // test only method
 func (vm *VM) LastPoppedStackElem() object.Object {
 	return vm.stack[vm.sp]
+}
+
+func NewWithGlobalsStore(bytecode *compiler.Bytecode, s []object.Object) *VM {
+	vm := New(bytecode)
+	vm.globals = s
+	return vm
 }

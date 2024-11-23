@@ -185,7 +185,7 @@ if (true) { 10 }; 3333;
 				// 0004
 				code.Make(code.OpConstant, 0),
 				// 0007
-				code.Make(code.OpJump,11),
+				code.Make(code.OpJump, 11),
 				// 0010
 				code.Make(code.OpNull),
 				// 0011
@@ -221,6 +221,54 @@ if (true) { 10 } else { 20 }; 3333;
 			},
 		},
 	}
+	runCompilerTests(t, tests)
+}
+func TestGlobalLetStatements(t *testing.T) {
+	tests := []compilerTestCase{
+		{
+			input: `
+			let one = 1;
+			let two = 2;
+			`,
+			expectedConstants: []interface{}{1, 2},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpConstant, 1),
+				code.Make(code.OpSetGlobal, 1),
+			},
+		},
+		{
+			input: `
+			let one = 1;
+			one;
+			`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpPop),
+			},
+		},
+		{
+			input: `
+			let one = 1;
+			let two = one;
+			two;
+			`,
+			expectedConstants: []interface{}{1},
+			expectedInstructions: []code.Instructions{
+				code.Make(code.OpConstant, 0),
+				code.Make(code.OpSetGlobal, 0),
+				code.Make(code.OpGetGlobal, 0),
+				code.Make(code.OpSetGlobal, 1),
+				code.Make(code.OpGetGlobal, 1),
+				code.Make(code.OpPop),
+			},
+		},
+	}
+
 	runCompilerTests(t, tests)
 }
 func runCompilerTests(t *testing.T, tests []compilerTestCase) {
@@ -289,7 +337,6 @@ func testInstructions(expected []code.Instructions, actual code.Instructions) er
 	return nil
 
 }
-
 func concatInstructions(s []code.Instructions) code.Instructions {
 	out := code.Instructions{}
 	for _, ins := range s {

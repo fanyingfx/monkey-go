@@ -16,6 +16,7 @@ type Compiler struct {
 	constants           []object.Object
 	lastInstruction     Emittedinstruction
 	previousInstruction Emittedinstruction
+	symbolTable         *SymbolTable
 }
 
 func New() *Compiler {
@@ -24,6 +25,7 @@ func New() *Compiler {
 		constants:           []object.Object{},
 		lastInstruction:     Emittedinstruction{},
 		previousInstruction: Emittedinstruction{},
+		symbolTable:         NewSymbolTable(),
 	}
 }
 func (c *Compiler) Compile(node ast.Node) error {
@@ -49,6 +51,13 @@ func (c *Compiler) Compile(node ast.Node) error {
 			return err
 		}
 		c.emit(code.OpPop)
+	case *ast.LetStatement:
+		err := c.Compile(node.Value)
+		if err != nil {
+			return err
+		}
+		symbol := c.symbolTable.Define(node.Name.Value)
+		c.emit(code.OpSetGlobal, symbol.Index)
 	case *ast.IfExpression:
 		err := c.Compile(node.Condition)
 		if err != nil {
@@ -153,7 +162,14 @@ func (c *Compiler) Compile(node ast.Node) error {
 	case *ast.IntegerLiteral:
 		integer := &object.Integer{Value: node.Value}
 		c.emit(code.OpConstant, c.addConstant(integer))
-
+	case *ast.Identifier:
+		symbol, ok := c.symbolTable.Resolve(node.Value)
+		if !ok {
+			return fmt.Errorf("undefined variable %s", node.Value)
+		}
+		c.emit(code.OpGetGlobal, symbol.Index)
+	default:
+		return fmt.Errorf("unknown node type %T", node)
 	}
 	return nil
 }
@@ -204,4 +220,11 @@ func (c *Compiler) Bytecode() *Bytecode {
 type Bytecode struct {
 	Instructions code.Instructions
 	Constants    []object.Object
+}
+
+func NewWithState(s *SymbolTable, constants []object.Object) *Compiler {
+	compiler := New()
+	compiler.symbolTable = s
+	compiler.constants = constants
+	return compiler
 }

@@ -31,6 +31,9 @@ const (
 	OpTrue
 	OpFalse
 
+	OpGetGlobal
+	OpSetGlobal
+
 	OpNull
 )
 
@@ -60,6 +63,9 @@ var definitions = map[Opcode]*Definition{
 
 	OpTrue:  {"OpTrue", []int{}},
 	OpFalse: {"OpFalse", []int{}},
+
+	OpGetGlobal: {"OpGetGlobal", []int{2}},
+	OpSetGlobal: {"OpSetGlobal", []int{2}},
 
 	OpNull: {"OpNull", []int{}},
 }
