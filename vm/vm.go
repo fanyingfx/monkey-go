@@ -31,7 +31,7 @@ type VM struct {
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
 	mainFrame := NewFrame(mainFn, 0)
-	
+
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
 
@@ -175,11 +175,21 @@ func (vm *VM) Run() error {
 			numArgs := code.ReadUint8(ins[ip+1:])
 			vm.currentFrame().ip += 1
 
-			err := vm.callFunction(int(numArgs))
+			err := vm.executeCall(int(numArgs))
 			if err != nil {
 				return err
 			}
-			
+		case code.OpGetBuiltin:
+			builtinIdex := code.ReadUint8(ins[ip+1:])
+			vm.currentFrame().ip += 1
+
+			definition := object.Builtins[builtinIdex]
+
+			err := vm.push(definition.Builtin)
+			if err != nil {
+				return err
+			}
+
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 			frame := vm.popFrame()
@@ -410,17 +420,39 @@ func (vm *VM) popFrame() *Frame {
 	vm.framesIndex--
 	return vm.frames[vm.framesIndex]
 }
-func (vm *VM) callFunction(numArgs int) error {
-	fn, ok := vm.stack[vm.sp-1-numArgs].(*object.CompiledFunction)
-	if !ok {
-		return fmt.Errorf("calling non-function")
+func (vm *VM) executeCall(numArgs int) error {
+	callee := vm.stack[vm.sp-1-numArgs]
+	switch callee := callee.(type) {
+	case *object.CompiledFunction:
+		return vm.callFunction(callee, numArgs)
+	case *object.Builtin:
+		return vm.callBuiltin(callee, numArgs)
+	default:
+		return fmt.Errorf("calling non-function and non-built-in")
 	}
+}
+func (vm *VM) callFunction(fn *object.CompiledFunction, numArgs int) error {
+	// fn, ok := vm.stack[vm.sp-1-numArgs].(*object.CompiledFunction)
+	// if !ok {
+	// 	return fmt.Errorf("calling non-function")
+	// }
 	if numArgs != fn.NumParameters {
 		return fmt.Errorf(
 			"wrong number of arguments: want=%d, got=%d", fn.NumParameters, numArgs)
-	} 
+	}
 	frame := NewFrame(fn, vm.sp-numArgs) // reset basePointer to vm.sp-numArgs
 	vm.pushFrame(frame)
-	vm.sp = frame.basePointer + fn.NumLocals 
+	vm.sp = frame.basePointer + fn.NumLocals
+	return nil
+}
+func (vm *VM) callBuiltin(builtin *object.Builtin, numArgs int) error {
+	args := vm.stack[vm.sp-numArgs : vm.sp]
+	result := builtin.Fn(args...)
+	vm.sp = vm.sp - numArgs - 1
+	if result != nil {
+		vm.push(result)
+	} else {
+		vm.push(Null)
+	}
 	return nil
 }
