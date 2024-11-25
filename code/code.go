@@ -152,7 +152,9 @@ func Lookup(op byte) (*Definition, error) {
 	}
 	return def, nil
 }
-
+func (op Opcode) OpName()string{
+	return definitions[op].Name
+}
 func Make(op Opcode, operands ...int) []byte {
 	def, ok := definitions[op]
 	if !ok {

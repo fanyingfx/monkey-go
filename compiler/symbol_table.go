@@ -20,7 +20,9 @@ type SymbolTable struct {
 }
 
 func (s *SymbolTable) Define(name string) Symbol {
-	symbol := Symbol{Name: name, Index: s.numDefinitions, Scope: GlobalScope}
+
+	symbol := Symbol{Name: name, Index: s.numDefinitions}
+
 	if s.Outer == nil {
 		symbol.Scope = GlobalScope
 	} else {
@@ -32,9 +34,9 @@ func (s *SymbolTable) Define(name string) Symbol {
 }
 func (s *SymbolTable) Resolve(name string) (Symbol, bool) {
 	obj, ok := s.store[name]
-	if !ok && s.Outer != nil{
-		obj,ok = s.Outer.Resolve(name)
-		return obj,ok
+	if !ok && s.Outer != nil {
+		obj, ok = s.Outer.Resolve(name)
+		return obj, ok
 	}
 	return obj, ok
 }

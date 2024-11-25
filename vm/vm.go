@@ -31,8 +31,10 @@ type VM struct {
 func New(bytecode *compiler.Bytecode) *VM {
 	mainFn := &object.CompiledFunction{Instructions: bytecode.Instructions}
 	mainFrame := NewFrame(mainFn, 0)
+	
 	frames := make([]*Frame, MaxFrames)
 	frames[0] = mainFrame
+
 	return &VM{
 		constants:   bytecode.Constants,
 		globals:     make([]object.Object, GlobalsSize),
@@ -58,6 +60,8 @@ func (vm *VM) Run() error {
 		ip = vm.currentFrame().ip
 		ins = vm.currentFrame().Instructions()
 		op = code.Opcode(ins[ip])
+
+		// fmt.Printf("current Op: %s\n",op.OpName())
 		switch op {
 		case code.OpConstant:
 			constIndex := code.ReadUint16(ins[ip+1:])
@@ -175,6 +179,7 @@ func (vm *VM) Run() error {
 			if err != nil {
 				return err
 			}
+			
 		case code.OpReturnValue:
 			returnValue := vm.pop()
 			frame := vm.popFrame()
@@ -413,9 +418,9 @@ func (vm *VM) callFunction(numArgs int) error {
 	if numArgs != fn.NumParameters {
 		return fmt.Errorf(
 			"wrong number of arguments: want=%d, got=%d", fn.NumParameters, numArgs)
-	}
-	frame := NewFrame(fn, vm.sp-numArgs)
+	} 
+	frame := NewFrame(fn, vm.sp-numArgs) // reset basePointer to vm.sp-numArgs
 	vm.pushFrame(frame)
-	vm.sp = frame.basePointer + fn.NumLocals
+	vm.sp = frame.basePointer + fn.NumLocals 
 	return nil
 }

@@ -23,9 +23,8 @@ type Compiler struct {
 	lastInstruction     Emittedinstruction
 	previousInstruction Emittedinstruction
 	symbolTable         *SymbolTable
-
-	scopes     []CompilationScope
-	scopeIndex int
+	scopes              []CompilationScope
+	scopeIndex          int
 }
 
 func New() *Compiler {
