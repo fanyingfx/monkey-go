@@ -50,6 +50,11 @@ const (
 
 	OpGetBuiltin
 
+	OpClosure
+	OpGetFree
+
+	OpCurrentClosure
+
 	OpNull
 )
 
@@ -90,13 +95,16 @@ var definitions = map[Opcode]*Definition{
 	OpHash:  {"OpHash", []int{2}},
 	OpIndex: {"OpIndex", []int{}},
 
-	OpCall: {"OpCall", []int{1}},
+	OpCall:           {"OpCall", []int{1}},
+	OpClosure:        {"OpClosure", []int{2, 1}},
+	OpGetFree:        {"OpGetFree", []int{1}},
+	OpCurrentClosure: {"OpCurrentClosure", []int{}},
 
 	OpReturnValue: {"OpReturnValue", []int{}},
 	OpReturn:      {"OpReturn", []int{}},
 
 	OpGetBuiltin: {"OpGetBuiltin", []int{1}},
-	OpNull: {"OpNull", []int{}},
+	OpNull:       {"OpNull", []int{}},
 }
 
 func (ins Instructions) String() string {
@@ -124,6 +132,8 @@ func (ins Instructions) fmtInstruction(def *Definition, operands []int) string {
 		return def.Name
 	case 1:
 		return fmt.Sprintf("%s %d", def.Name, operands[0])
+	case 2:
+		return fmt.Sprintf("%s %d %d", def.Name, operands[0], operands[1])
 	}
 	return fmt.Sprintf("ERROR: unhandled operandCount for %s\n", def.Name)
 }
@@ -155,7 +165,7 @@ func Lookup(op byte) (*Definition, error) {
 	}
 	return def, nil
 }
-func (op Opcode) OpName()string{
+func (op Opcode) OpName() string {
 	return definitions[op].Name
 }
 func Make(op Opcode, operands ...int) []byte {

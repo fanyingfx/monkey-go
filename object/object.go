@@ -23,6 +23,7 @@ const (
 	ARRAY_OBJ             = "ARRAY"
 	HAHS_OBJ              = "HASH"
 	ERROR_OBJ             = "ERROR"
+	CLOSURE_OBJ           = "CLOSURE"
 )
 
 type Object interface {
@@ -171,6 +172,16 @@ func (h *Hash) Inspect() string {
 	sb.WriteString(strings.Join(pairs, ", "))
 	sb.WriteString("}")
 	return sb.String()
+}
+
+type Closure struct {
+	Fn   *CompiledFunction
+	Free []Object
+}
+
+func (c *Closure) Type() ObjectType { return CLOSURE_OBJ }
+func (c *Closure) Inspect() string {
+	return fmt.Sprintf("Closure[%p]", c)
 }
 
 type Hashable interface {
